@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import base64
 from data_manager import (
     load_transceivers,
     get_transceivers_df,
@@ -221,20 +222,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Header section with Ruckus branding
-st.markdown("""
+# Read and encode logo
+with open("Ruckus_logo_white-orange.png", "rb") as f:
+    logo_data = base64.b64encode(f.read()).decode()
+
+st.markdown(f"""
 <div class="ruckus-header">
-""", unsafe_allow_html=True)
-
-col_text, col_logo = st.columns([4, 1])
-with col_text:
-    st.markdown("""
-    <div class="ruckus-logo-text">🔶 RUCKUS NETWORKS</div>
-    <div class="ruckus-subtitle">Optical Transceivers Catalog</div>
-    """, unsafe_allow_html=True)
-with col_logo:
-    st.image("Ruckus_logo_white-orange.png", width=180)
-
-st.markdown("""
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div class="ruckus-logo-text">🔶 RUCKUS NETWORKS</div>
+            <div class="ruckus-subtitle">Optical Transceivers Catalog</div>
+        </div>
+        <div>
+            <img src="data:image/png;base64,{logo_data}" style="height: 60px; margin-right: 1rem;" alt="Ruckus Networks Logo">
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 

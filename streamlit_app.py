@@ -225,15 +225,14 @@ st.markdown("""
 <div class="ruckus-header">
 """, unsafe_allow_html=True)
 
-col_logo, col_text = st.columns([1, 5])
-with col_logo:
-    st.image("Ruckus_logo_white-orange.png", width=200)
+col_text, col_logo = st.columns([4, 1])
 with col_text:
     st.markdown("""
-    <div style="padding-top: 1rem;">
-        <div class="ruckus-subtitle">Optical Transceivers Catalog</div>
-    </div>
+    <div class="ruckus-logo-text">🔶 RUCKUS NETWORKS</div>
+    <div class="ruckus-subtitle">Optical Transceivers Catalog</div>
     """, unsafe_allow_html=True)
+with col_logo:
+    st.image("Ruckus_logo_white-orange.png", width=180)
 
 st.markdown("""
 </div>

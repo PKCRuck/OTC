@@ -9,6 +9,11 @@ from data_manager import (
     delete_transceiver,
     get_transceiver
 )
+from auth import verify_password, change_password, get_default_password_info
+
+# Initialize session state for authentication
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
 
 # Page configuration
 st.set_page_config(
@@ -52,11 +57,23 @@ st.markdown("""
 # Main title
 st.markdown('<div class="main-header">📡 Ruckus Optical Transceivers</div>', unsafe_allow_html=True)
 
-# Create tabs for different views
-tab1, tab2 = st.tabs(["📦 Product Catalog", "⚙️ Admin Panel"])
+# Navigation
+col1, col2, col3 = st.columns([2, 2, 6])
+with col1:
+    if st.button("📦 Product Catalog", use_container_width=True):
+        st.session_state.current_page = "catalog"
+with col2:
+    if st.button("⚙️ Admin Panel", use_container_width=True):
+        st.session_state.current_page = "admin"
 
-# Tab 1: Product Catalog
-with tab1:
+# Initialize current page if not set
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = "catalog"
+
+st.markdown("---")
+
+# Display the appropriate page
+if st.session_state.current_page == "catalog":
     st.subheader("Product Catalog")
 
     # Filters section
@@ -161,111 +178,113 @@ with tab1:
     else:
         st.warning("No transceivers found in the catalog.")
 
-# Tab 2: Admin Panel
-with tab2:
-    st.subheader("Admin Panel")
+# Admin Panel Page
+elif st.session_state.current_page == "admin":
+    # Check if user is authenticated
+    if not st.session_state.authenticated:
+        # Login Screen
+        st.subheader("🔐 Admin Login")
 
-    admin_action = st.radio(
-        "Select Action",
-        ["Add New Transceiver", "Edit Transceiver", "Delete Transceiver"],
-        horizontal=True
-    )
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.info("Please enter the admin password to access the admin panel.")
 
-    if admin_action == "Add New Transceiver":
-        st.markdown("### Add New Transceiver")
+            with st.form("login_form"):
+                password = st.text_input("Password", type="password", placeholder="Enter admin password")
+                submit_login = st.form_submit_button("Login", use_container_width=True)
 
-        with st.form("add_transceiver_form"):
-            col1, col2 = st.columns(2)
-
-            with col1:
-                sku = st.text_input("SKU *", placeholder="e.g., RN-SFP-10G-SR")
-                name = st.text_input("Name *", placeholder="e.g., Ruckus 10GBASE-SR SFP+")
-                form_factor = st.selectbox("Form Factor *", ["SFP", "SFP+", "SFP28", "QSFP+", "QSFP28", "QSFP-DD"])
-                data_rate = st.selectbox("Data Rate *", ["1G", "10G", "25G", "40G", "100G", "400G"])
-                wavelength = st.text_input("Wavelength *", placeholder="e.g., 850nm")
-                reach = st.text_input("Reach *", placeholder="e.g., 300m (OM3)")
-
-            with col2:
-                connector = st.selectbox("Connector *", ["LC", "SC", "MPO/MTP", "MPO-16"])
-                temperature = st.text_input("Temperature *", placeholder="e.g., 0 to 70°C")
-                power = st.text_input("Power *", placeholder="e.g., 1.5W max")
-                status = st.selectbox("Status *", ["Active", "EOL", "Discontinued"])
-                description = st.text_area("Description *", placeholder="Enter detailed description")
-
-            submit_add = st.form_submit_button("Add Transceiver")
-
-            if submit_add:
-                if all([sku, name, form_factor, data_rate, wavelength, reach, connector, temperature, power, description, status]):
-                    new_transceiver = {
-                        "sku": sku,
-                        "name": name,
-                        "form_factor": form_factor,
-                        "data_rate": data_rate,
-                        "wavelength": wavelength,
-                        "reach": reach,
-                        "connector": connector,
-                        "temperature": temperature,
-                        "power": power,
-                        "description": description,
-                        "status": status
-                    }
-
-                    if add_transceiver(new_transceiver):
-                        st.success(f"✅ Successfully added transceiver: {sku}")
+                if submit_login:
+                    if password and verify_password(password):
+                        st.session_state.authenticated = True
+                        st.success("✅ Login successful!")
                         st.rerun()
                     else:
-                        st.error(f"❌ Error: SKU '{sku}' already exists!")
-                else:
-                    st.error("❌ Please fill in all required fields!")
+                        st.error("❌ Invalid password!")
 
-    elif admin_action == "Edit Transceiver":
-        st.markdown("### Edit Transceiver")
+            st.markdown("---")
+            st.caption("Default password: **admin123** (Please change after first login)")
 
-        df = get_transceivers_df()
-        if not df.empty:
-            selected_sku = st.selectbox("Select Transceiver to Edit", df['sku'].tolist())
+    else:
+        # User is authenticated - show admin panel
+        st.subheader("⚙️ Admin Panel")
 
-            if selected_sku:
-                transceiver = get_transceiver(selected_sku)
+        # Logout and password change buttons
+        col1, col2, col3 = st.columns([2, 2, 6])
+        with col1:
+            if st.button("🔓 Logout", use_container_width=True):
+                st.session_state.authenticated = False
+                st.success("Logged out successfully!")
+                st.rerun()
+        with col2:
+            show_change_password = st.button("🔑 Change Password", use_container_width=True)
 
-                with st.form("edit_transceiver_form"):
-                    col1, col2 = st.columns(2)
+        # Show password change form if button clicked
+        if show_change_password or 'show_password_change' in st.session_state:
+            st.session_state.show_password_change = True
 
-                    with col1:
-                        sku = st.text_input("SKU *", value=transceiver['sku'], disabled=True)
-                        name = st.text_input("Name *", value=transceiver['name'])
-                        form_factor = st.selectbox(
-                            "Form Factor *",
-                            ["SFP", "SFP+", "SFP28", "QSFP+", "QSFP28", "QSFP-DD"],
-                            index=["SFP", "SFP+", "SFP28", "QSFP+", "QSFP28", "QSFP-DD"].index(transceiver['form_factor'])
-                        )
-                        data_rate = st.selectbox(
-                            "Data Rate *",
-                            ["1G", "10G", "25G", "40G", "100G", "400G"],
-                            index=["1G", "10G", "25G", "40G", "100G", "400G"].index(transceiver['data_rate'])
-                        )
-                        wavelength = st.text_input("Wavelength *", value=transceiver['wavelength'])
-                        reach = st.text_input("Reach *", value=transceiver['reach'])
+            with st.expander("Change Password", expanded=True):
+                with st.form("change_password_form"):
+                    old_password = st.text_input("Current Password", type="password")
+                    new_password = st.text_input("New Password", type="password")
+                    confirm_password = st.text_input("Confirm New Password", type="password")
 
-                    with col2:
-                        connector = st.selectbox(
-                            "Connector *",
-                            ["LC", "SC", "MPO/MTP", "MPO-16"],
-                            index=["LC", "SC", "MPO/MTP", "MPO-16"].index(transceiver['connector'])
-                        )
-                        temperature = st.text_input("Temperature *", value=transceiver['temperature'])
-                        power = st.text_input("Power *", value=transceiver['power'])
-                        status = st.selectbox(
-                            "Status *",
-                            ["Active", "EOL", "Discontinued"],
-                            index=["Active", "EOL", "Discontinued"].index(transceiver['status'])
-                        )
-                        description = st.text_area("Description *", value=transceiver['description'])
+                    submit_change = st.form_submit_button("Update Password")
 
-                    submit_edit = st.form_submit_button("Update Transceiver")
+                    if submit_change:
+                        if not old_password or not new_password or not confirm_password:
+                            st.error("❌ All fields are required!")
+                        elif new_password != confirm_password:
+                            st.error("❌ New passwords do not match!")
+                        elif len(new_password) < 6:
+                            st.error("❌ Password must be at least 6 characters long!")
+                        elif change_password(old_password, new_password):
+                            st.success("✅ Password changed successfully!")
+                            if 'show_password_change' in st.session_state:
+                                del st.session_state.show_password_change
+                            st.rerun()
+                        else:
+                            st.error("❌ Current password is incorrect!")
 
-                    if submit_edit:
-                        updated_transceiver = {
+        # Show warning if using default password
+        default_pwd_warning = get_default_password_info()
+        if default_pwd_warning:
+            st.warning(default_pwd_warning)
+
+        st.markdown("---")
+
+        # Admin Actions (only visible when authenticated)
+        admin_action = st.radio(
+            "Select Action",
+            ["Add New Transceiver", "Edit Transceiver", "Delete Transceiver"],
+            horizontal=True
+        )
+
+        if admin_action == "Add New Transceiver":
+            st.markdown("### Add New Transceiver")
+
+            with st.form("add_transceiver_form"):
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    sku = st.text_input("SKU *", placeholder="e.g., RN-SFP-10G-SR")
+                    name = st.text_input("Name *", placeholder="e.g., Ruckus 10GBASE-SR SFP+")
+                    form_factor = st.selectbox("Form Factor *", ["SFP", "SFP+", "SFP28", "QSFP+", "QSFP28", "QSFP-DD"])
+                    data_rate = st.selectbox("Data Rate *", ["1G", "10G", "25G", "40G", "100G", "400G"])
+                    wavelength = st.text_input("Wavelength *", placeholder="e.g., 850nm")
+                    reach = st.text_input("Reach *", placeholder="e.g., 300m (OM3)")
+
+                with col2:
+                    connector = st.selectbox("Connector *", ["LC", "SC", "MPO/MTP", "MPO-16"])
+                    temperature = st.text_input("Temperature *", placeholder="e.g., 0 to 70°C")
+                    power = st.text_input("Power *", placeholder="e.g., 1.5W max")
+                    status = st.selectbox("Status *", ["Active", "EOL", "Discontinued"])
+                    description = st.text_area("Description *", placeholder="Enter detailed description")
+
+                submit_add = st.form_submit_button("Add Transceiver")
+
+                if submit_add:
+                    if all([sku, name, form_factor, data_rate, wavelength, reach, connector, temperature, power, description, status]):
+                        new_transceiver = {
                             "sku": sku,
                             "name": name,
                             "form_factor": form_factor,
@@ -279,46 +298,115 @@ with tab2:
                             "status": status
                         }
 
-                        if update_transceiver(sku, updated_transceiver):
-                            st.success(f"✅ Successfully updated transceiver: {sku}")
+                        if add_transceiver(new_transceiver):
+                            st.success(f"✅ Successfully added transceiver: {sku}")
                             st.rerun()
                         else:
-                            st.error(f"❌ Error updating transceiver!")
-        else:
-            st.warning("No transceivers available to edit.")
+                            st.error(f"❌ Error: SKU '{sku}' already exists!")
+                    else:
+                        st.error("❌ Please fill in all required fields!")
 
-    elif admin_action == "Delete Transceiver":
-        st.markdown("### Delete Transceiver")
+        elif admin_action == "Edit Transceiver":
+            st.markdown("### Edit Transceiver")
 
-        df = get_transceivers_df()
-        if not df.empty:
-            selected_sku = st.selectbox("Select Transceiver to Delete", df['sku'].tolist())
+            df = get_transceivers_df()
+            if not df.empty:
+                selected_sku = st.selectbox("Select Transceiver to Edit", df['sku'].tolist())
 
-            if selected_sku:
-                transceiver = get_transceiver(selected_sku)
+                if selected_sku:
+                    transceiver = get_transceiver(selected_sku)
 
-                st.warning(f"**Are you sure you want to delete this transceiver?**")
-                st.info(f"""
-                **SKU:** {transceiver['sku']}
-                **Name:** {transceiver['name']}
-                **Form Factor:** {transceiver['form_factor']}
-                **Data Rate:** {transceiver['data_rate']}
-                """)
+                    with st.form("edit_transceiver_form"):
+                        col1, col2 = st.columns(2)
 
-                col1, col2, col3 = st.columns([1, 1, 4])
-                with col1:
-                    if st.button("🗑️ Confirm Delete", type="primary"):
-                        if delete_transceiver(selected_sku):
-                            st.success(f"✅ Successfully deleted transceiver: {selected_sku}")
-                            st.rerun()
-                        else:
-                            st.error(f"❌ Error deleting transceiver!")
+                        with col1:
+                            sku = st.text_input("SKU *", value=transceiver['sku'], disabled=True)
+                            name = st.text_input("Name *", value=transceiver['name'])
+                            form_factor = st.selectbox(
+                                "Form Factor *",
+                                ["SFP", "SFP+", "SFP28", "QSFP+", "QSFP28", "QSFP-DD"],
+                                index=["SFP", "SFP+", "SFP28", "QSFP+", "QSFP28", "QSFP-DD"].index(transceiver['form_factor'])
+                            )
+                            data_rate = st.selectbox(
+                                "Data Rate *",
+                                ["1G", "10G", "25G", "40G", "100G", "400G"],
+                                index=["1G", "10G", "25G", "40G", "100G", "400G"].index(transceiver['data_rate'])
+                            )
+                            wavelength = st.text_input("Wavelength *", value=transceiver['wavelength'])
+                            reach = st.text_input("Reach *", value=transceiver['reach'])
 
-                with col2:
-                    if st.button("Cancel"):
-                        st.info("Deletion cancelled.")
-        else:
-            st.warning("No transceivers available to delete.")
+                        with col2:
+                            connector = st.selectbox(
+                                "Connector *",
+                                ["LC", "SC", "MPO/MTP", "MPO-16"],
+                                index=["LC", "SC", "MPO/MTP", "MPO-16"].index(transceiver['connector'])
+                            )
+                            temperature = st.text_input("Temperature *", value=transceiver['temperature'])
+                            power = st.text_input("Power *", value=transceiver['power'])
+                            status = st.selectbox(
+                                "Status *",
+                                ["Active", "EOL", "Discontinued"],
+                                index=["Active", "EOL", "Discontinued"].index(transceiver['status'])
+                            )
+                            description = st.text_area("Description *", value=transceiver['description'])
+
+                        submit_edit = st.form_submit_button("Update Transceiver")
+
+                        if submit_edit:
+                            updated_transceiver = {
+                                "sku": sku,
+                                "name": name,
+                                "form_factor": form_factor,
+                                "data_rate": data_rate,
+                                "wavelength": wavelength,
+                                "reach": reach,
+                                "connector": connector,
+                                "temperature": temperature,
+                                "power": power,
+                                "description": description,
+                                "status": status
+                            }
+
+                            if update_transceiver(sku, updated_transceiver):
+                                st.success(f"✅ Successfully updated transceiver: {sku}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Error updating transceiver!")
+            else:
+                st.warning("No transceivers available to edit.")
+
+        elif admin_action == "Delete Transceiver":
+            st.markdown("### Delete Transceiver")
+
+            df = get_transceivers_df()
+            if not df.empty:
+                selected_sku = st.selectbox("Select Transceiver to Delete", df['sku'].tolist())
+
+                if selected_sku:
+                    transceiver = get_transceiver(selected_sku)
+
+                    st.warning(f"**Are you sure you want to delete this transceiver?**")
+                    st.info(f"""
+                    **SKU:** {transceiver['sku']}
+                    **Name:** {transceiver['name']}
+                    **Form Factor:** {transceiver['form_factor']}
+                    **Data Rate:** {transceiver['data_rate']}
+                    """)
+
+                    col1, col2, col3 = st.columns([1, 1, 4])
+                    with col1:
+                        if st.button("🗑️ Confirm Delete", type="primary"):
+                            if delete_transceiver(selected_sku):
+                                st.success(f"✅ Successfully deleted transceiver: {selected_sku}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Error deleting transceiver!")
+
+                    with col2:
+                        if st.button("Cancel"):
+                            st.info("Deletion cancelled.")
+            else:
+                st.warning("No transceivers available to delete.")
 
 # Footer
 st.markdown("---")

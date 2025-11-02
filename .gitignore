@@ -1,5 +1,8 @@
 .streamlit/secrets.toml
 
+# Application data files
+data/auth.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

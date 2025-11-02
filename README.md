@@ -11,10 +11,13 @@ A comprehensive web application for viewing and managing Ruckus Optical Transcei
 - **Real-time Results**: Dynamic filtering with instant result counts
 
 ### Admin Panel
+- **Secure Login**: Password-protected access to admin functions
 - **Add New Transceivers**: Create new optical transceiver entries with all specifications
 - **Edit Existing Transceivers**: Update any transceiver information (SKU cannot be changed)
 - **Delete Transceivers**: Remove transceivers with confirmation prompts
 - **Data Validation**: Ensures all required fields are filled before saving
+- **Password Management**: Change admin password with validation
+- **Session Management**: Logout functionality to secure the admin panel
 
 ### Pre-loaded Sample Data
 The application comes with 15 pre-configured Ruckus optical transceivers including:
@@ -51,15 +54,34 @@ The application comes with 15 pre-configured Ruckus optical transceivers includi
 4. Toggle between "Table View" and "Card View" for different display options
 
 ### Managing Transceivers
-1. Navigate to the "Admin Panel" tab
-2. Select your desired action:
+1. Navigate to the "Admin Panel" by clicking the button in the top navigation
+2. **Login** with the admin password:
+   - Default password: `admin123`
+   - **Important**: Change the default password immediately after first login for security
+3. Once logged in, select your desired action:
    - **Add New Transceiver**: Fill in all required fields and click "Add Transceiver"
    - **Edit Transceiver**: Select a transceiver from the dropdown, modify fields, and click "Update Transceiver"
    - **Delete Transceiver**: Select a transceiver and confirm deletion
+4. **Password Management**:
+   - Click "Change Password" to update your admin password
+   - Requires current password and new password (minimum 6 characters)
+5. **Logout** when finished to secure the admin panel
 
 ## Data Storage
 
-Transceiver data is stored in JSON format at `data/transceivers.json`. This file is automatically created on first run and persists all changes made through the admin panel.
+All application data is stored locally in JSON format:
+- **Transceivers**: `data/transceivers.json` - Contains all optical transceiver records
+- **Authentication**: `data/auth.json` - Stores hashed admin password (SHA-256)
+
+These files are automatically created on first run and persist all changes made through the application.
+
+## Security
+
+- Admin panel is password-protected with session-based authentication
+- Passwords are hashed using SHA-256 before storage
+- Default password is `admin123` - **MUST be changed after first login**
+- Session state management ensures admin access is controlled
+- Logout functionality to terminate admin sessions
 
 ## Project Structure
 
@@ -67,9 +89,11 @@ Transceiver data is stored in JSON format at `data/transceivers.json`. This file
 OTC/
 ├── streamlit_app.py        # Main Streamlit application
 ├── data_manager.py         # Data operations and utilities
+├── auth.py                 # Authentication and password management
 ├── requirements.txt        # Python dependencies
 ├── data/
-│   └── transceivers.json   # Transceiver database (JSON)
+│   ├── transceivers.json   # Transceiver database (JSON)
+│   └── auth.json          # Authentication data (auto-generated)
 └── README.md              # This file
 ```
 

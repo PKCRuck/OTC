@@ -1,6 +1,13 @@
-# 📡 Ruckus Optical Transceivers Catalog
+# 🔶 Ruckus Optical Transceivers Catalog
 
-A comprehensive web application for viewing and managing Ruckus Optical Transceivers. Built with Streamlit, this application provides a user-friendly interface similar to Juniper's HCT catalog, featuring filtering, searching, and full CRUD operations.
+A comprehensive web application for viewing and managing Ruckus Optical Transceivers. Built with Streamlit and styled with official Ruckus Networks branding, this application provides a professional, user-friendly interface featuring advanced filtering, searching, and full CRUD operations.
+
+## Branding
+
+This application uses the official **Ruckus Networks** brand identity:
+- **Colors**: Tango Orange (#F47920), Bunker Dark (#101820), Kournikova Yellow (#FFDF7E)
+- **Typography**: Open Sans (official Ruckus Networks font)
+- **Design**: Professional gradient headers, branded buttons, and Ruckus color scheme throughout
 
 ## Features
 
